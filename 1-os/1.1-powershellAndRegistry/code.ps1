@@ -85,7 +85,7 @@ while ($zipNumber -gt 0){
     if (Test-Path $currentZip) {
         Expand-Archive -Path $currentZip -DestinationPath $newFolder -Force
         $workingDir = $newFolder
-        
+
     } else {
         Write-Host "No more zip files found. Looking for flag..."
         break

