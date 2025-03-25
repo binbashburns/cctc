@@ -11,17 +11,23 @@ Get-Content C:\Users\CTF\Documents\nothing_here -Stream hidden
 
 # In C:\Users\CTF:
 
-Get-ChildItem -force -recurse -file | Select-String -Pattern "cookie"
+Get-ChildItem -Path C:\ -Recurse -Force -ErrorAction SilentlyContinue | Select-String -Pattern "fortune cookie" -ErrorAction SilentlyContinue
 
 # Documents\fortune cookie.txt:1:only listen to the Fortune Cookie, and disregard all other fortune telling units
 
+# Found C:\Windows\PLA\not_anihc\The Fortune Cookie
 
+Get-Item -Stream * 'C:\Windows\PLA\not_anihc\The Fortune Cookie'
+
+# Found an additional stream called "none"
+
+Get-Content 'C:\Windows\PLA\not_anihc\The Fortune Cookie' -Stream none
 
 #############################
 
 # There are plenty of phish in the C:\Users\CTF, but sometimes they're hidden in plain site
 
-Get-ChildItem -path C:\Users\CTF\Documents -recurse -force
+Get-ChildItem -path C:\Users\CTF\Documents -Recurse -Force
 Get-Content -path .\www\200
 
 #############################
