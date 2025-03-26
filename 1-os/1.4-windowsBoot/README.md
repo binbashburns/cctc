@@ -172,19 +172,18 @@ User Subsystems run in **Session 0** and **Session 1**
 
 Session 0 is for security and high privilege processes such as services. They are run in a separate session to isolate them from individual user’s processes.
 
-    - `smss.exe` installs the Win32 subsystem kernel and user mode components (win32k.sys - kernel; winsrv.dll - user; and csrss.exe - user.)
+  - `smss.exe` installs the Win32 subsystem kernel and user mode components (win32k.sys - kernel; winsrv.dll - user; and csrss.exe - user.)
 
-       - `csrss.exe` - The Client/Server Runtime Subsystem supports process / thread creation and management.
+    - `csrss.exe` - The Client/Server Runtime Subsystem supports process / thread creation and management.
 
-       - `wininit.exe` marks itself as critical, initializes the Windows temp directory, loads the rest of the registry, and starts user mode scheduling. It also installs programs that require a reboot to finish the install process. **It also starts**:
+    - `wininit.exe` marks itself as critical, initializes the Windows temp directory, loads the rest of the registry, and starts user mode scheduling. It also installs programs that require a reboot to finish the install process. **It also starts**:
 
-           - `lsm.exe` - the **Local Session Manager (LSM)** handles all sessions of a system (both remote desktop sessions and local system sessions.)
+      - `lsm.exe` - the **Local Session Manager (LSM)** handles all sessions of a system (both remote desktop sessions and local system sessions.)
 
-           - `lsass.exe` - the **Local Security Authority Subsystem (LSASS)** provides user authentication services, manages the local security policy, and generates access tokens.
+      - `lsass.exe` - the **Local Security Authority Subsystem (LSASS)** provides user authentication services, manages the local security policy, and generates access tokens.
 
-           - `services.exe` the **Services Control Manager (SCM)** loads AutoStart services, using LSASS to authenticate if they run as something other than System.
-
-        - `wininit.exe` then waits for system shutdown to undo everything it started.
+      - `services.exe` the **Services Control Manager (SCM)** loads AutoStart services, using LSASS to authenticate if they run as something other than System.
+    - `wininit.exe` then waits for system shutdown to undo everything it started.
 
 By why does any of this matter?
 
