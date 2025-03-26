@@ -2,7 +2,7 @@
 Details about the range itself are below
 
 ## Range Map
-![range-photo](../0-src/Range_Diagram.PNG)
+![range-photo](../../0-src/Range_Diagram.PNG)
 
 ## Range IPs
 | Host | IP Address |
