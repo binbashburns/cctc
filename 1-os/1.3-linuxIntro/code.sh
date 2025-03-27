@@ -48,7 +48,7 @@ cat /etc/passwd
 
 ######################
 
-# Find all members of a given ggroup
+# Find all members of a given group
 getent group lodge
 
 ######################
@@ -66,17 +66,50 @@ find / -type d -name "Bibliotheca" 2>/dev/null
 ######################
 
 # Identify the number of users with valid login shells, who can list the contents of the Bibliotheca directory.
-ls -ld /media/Bibliotheca
 
-# found group name
-
-getent group mephiston
+getent passwd | grep -F -f <(grep -E '^/' /etc/shells) | cut -d: -f1 | wc -l
 
 ######################
 
 /media/Bibliotheca/Bibliotheca_tribus/Codex_Imperium
 
 /media/Bibliotheca/Bibliotheca_unus/Codex_Astartes
+
+######################
+
+# Execute the file owned by the guardsmen group in /media/Bibliotheca, as the owning user. The flag is the code name provided after a successful access attempt.
+
+# find what files are owned in the directory by the guardsmen group
+find /media/Bibliotheca/ -group guardsmen
+# media/Bibliotheca/Bibliotheca_quattuor/Tactica_Imperium
+# /media/Bibliotheca/Bibliotheca_tribus/Codex_Imperium
+
+# find the permissions on those two files
+ls -la /media/Bibliotheca/Bibliotheca_quattuor/Tactica_Imperium
+# -rwxrwx--- 1 gaunt guardsmen 865 Feb 28  2022 /media/Bibliotheca/Bibliotheca_quattuor/Tactica_Imperium
+
+ls -la /media/Bibliotheca/Bibliotheca_tribus/Codex_Imperium
+# -r--rw-r-- 1 mephiston guardsmen 4047 Feb 28  2022 /media/Bibliotheca/Bibliotheca_tribus/Codex_Imperium
+
+# Check sudo rights to see which one of these I can run:
+sudo -l
+# Matching Defaults entries for garviel on terra:
+#     env_reset, mail_badpass,
+#     secure_path=/usr/local/sbin\:/usr/local/bin\:/usr/sbin\:/usr/bin\:/sbin\:/bin\:/snap/bin
+
+# User garviel may run the following commands on terra:
+#     (ALL) NOPASSWD: /bin/cat /etc/shadow
+#     (gaunt) NOPASSWD: /media/Bibliotheca/Bibliotheca_quattuor/Tactica_Imperium
+#     (ALL) NOPASSWD: /bin/cat, /bin/ls, /usr/bin/find, /bin/systemctl
+
+# So we want to run Tactica_Imperium as sudo, assuming gaunt's persona:
+sudo -u gaunt /media/Bibliotheca/Bibliotheca_quattuor/Tactica_Imperium
+
+# Enter_Access_Code
+# Only the owner may access this file:
+# Speak thy name: gaunt
+# Processing...Access Granted
+# Codename: GHOSTS
 
 ######################
 
