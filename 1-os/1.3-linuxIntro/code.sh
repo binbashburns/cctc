@@ -132,7 +132,15 @@ awk 'NR>=420 && NR<=1337' numbers | sha512sum -
 
 ######################
 
+# Find the warp and read its secrets for the flag.
 
+find /media/Bibliotheca/Bibliotheca_duo/ -type f 2>/dev/null
+
+# ...
+# /media/Bibliotheca/Bibliotheca_duo/.warp2/.warp5/warp5/.warp3/warp2/.secrets
+# ...
+
+cat /media/Bibliotheca/Bibliotheca_duo/.warp2/.warp5/warp5/.warp3/warp2/.secrets
 
 ######################
 
