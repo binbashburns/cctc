@@ -18,7 +18,6 @@ student@linux-opstation-grkv:~$ ps
 -	`ps` (report a snapshot of the current processes) command
 -	the output provides information about the currently running processes, including their process identification numbers (PID).
 
-
 ## top command
 
 The `top` command is used to show the Linux processes. It provides a dynamic real-time view of the running system. Usually, this command shows the summary information of the system and the list of processes or threads which are currently managed by the Linux Kernel. Additional columns, like `ppid`, can be added by pressing `f` in the main window. A hierarchical view of the process tree can be displayed by pressing `shift + v`.
