@@ -72,3 +72,24 @@ ls -l
 # From referenced file: kern.!=info
 # OR: 0,7,udp (0 for kernel, 7 because it's everything BUT info, and UDP for one @ symbol)
 
+# File: /home/garviel/output.xml
+# Parse all of the IP addresses from the file using XPATH queries
+# Sample Output (without piping to MD5SUM)
+#  addr="XXX.xxx.xxx.xxx"
+#  addr="XXX.xxx.xxx.xxx"
+#  addr="XXX.xxx.xxx.xxx"
+# --TRIMMED--
+# Flag format: md5 hash of output
+xpath -q -e '//*[@addr]/@addr' output.xml | md5sum
+# 0e850f14fc192c5105955ec094287bd2
+
+# Select all of the IP addresses and ports using a single XPATH Union Statement
+# Pipe the result to md5sum for the flag
+xpath -q -e '//*[@addr]/@addr | //*[@portid]/@portid' output.xml | md5sum
+# ff7990139b6d09aa65afb6e069db0dec
+
+# File: /home/garviel/conn.log
+# Use jq to pretty print the JSON file conn.log.
+# Hash the pretty-printed file with md5sum for the flag.
+jq '.' conn.log | md5sum
+# 25ebedf7442e470eaaa48b5f7d5b96f4
