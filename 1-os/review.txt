@@ -1,0 +1,73 @@
+OS Review
+
+#### Linux ####
+
+What sudo permissions do I have
+sudo -Linux
+
+List directories with hidden files/folder:
+ls -la
+
+Read files
+cat
+less (then use / to search)
+
+List network connections
+netstat -ano
+ss -tulpn
+lsof -i:tcp
+
+List running process
+htop
+ps -faux
+
+Persistence Mechanisms
+/cron/crontab/systemd timers
+/etc/crontab
+/etc/cron.d
+/var/spool/cron/crontabs
+
+.bashrc 
+~/.bashrc
+
+profiles 
+~/.profile
+/etc/profile
+/etc/bash/.bashrc
+
+run levels
+/etc/rc00
+...
+/etc/rc06
+
+#### Windows ####
+
+Get current running processes
+Get-Process | Select-Object Name,Id,Path
+ProcExp (sysinternals)
+
+Get network connections
+Get-NetTCPConnection | Where-Object State -eq 'Listen' | Select-Object LocalPort,DestinationPort
+Get-NetTCPConnection | Select-Object State,LocalPort,LocalAddress,OwningProcess | Where-Object State -eq 'Listen'
+TCPView (sysinternals)
+
+Windows Artifacts
+C:\Users\username\Downloads
+$Env:Temp (C:\Windows\Temp, C:\Temp)
+Get-ItemProperty HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\UserAssist\*
+AutoRuns (sysinternals)
+
+Persistence Mechanisms
+# Scheduled Tasks
+schtasks /query /tn "<TaskName>" /v /fo list
+Get-ScheduledTask <TaskName> | Select-Object *
+AutoRuns (sysinternals)
+# Run Keys
+AutoRuns (sysinternals)
+Look at FG for Guidance
+PowerShell Profiles
+$Profile | Select-Object *
+(If you use PS Remote, it will return different values. SSH should work.)
+Get-Service
+Get-CimInstance Win32_Service | Select-Object *
+sc query
