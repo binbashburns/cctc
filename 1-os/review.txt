@@ -71,3 +71,5 @@ $Profile | Select-Object *
 Get-Service
 Get-CimInstance Win32_Service | Select-Object *
 sc query
+
+adding a note
