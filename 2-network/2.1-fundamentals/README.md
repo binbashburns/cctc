@@ -387,3 +387,166 @@ Packet Header breakdown:
 
 ![ipv4-structure](../../0-src/IPv4_Structure.png)
 
+## VPN
+
+### L2TP (TCP 1701)
+
+   - Layer Two Tunneling Protocol (L2TP) serves as an extension of the Point-to-Point Tunneling Protocol (PPTP) commonly employed by internet service providers (ISPs) to establish virtual private networks (VPNs). The primary objective of L2TP is to enable secure data transmission through the creation of tunnels. To uphold security and privacy standards, L2TP necessitates the use of an encryption protocol within the established tunnel.
+
+   - L2TP exhibits the capability to transport a diverse range of Layer 2 (L2) data types across an Internet Protocol (IP) or Layer Three (L3) network. The initiation of this process involves the establishment of a tunnel connecting an L2TP Access Concentrator (LAC) and an L2TP Network Server (LNS) on the internet. This configuration facilitates the implementation of a Point-to-Point Protocol (PPP) link layer, which is encapsulated and seamlessly transferred across the internet for secure and efficient communication.
+
+![L2TP](../../0-src/l2tp.png)
+
+   - Specified in [RFC 2661](https://tools.ietf.org/html/rfc2661) Has origins from Cisco’s L2F and Microsoft’s PPTP. Does not provide any encryption itself. Relies on other encryption methods for confidentiality.
+
+   - [L2TP Wiki Reference](https://en.wikipedia.org/wiki/Layer_2_Tunneling_Protocol)
+
+   - [L2TP Example PCAP from Cloudshark](https://www.cloudshark.org/captures/42d07a525b55)
+
+References:
+
+- https://tools.ietf.org/html/rfc2661
+- https://en.wikipedia.org/wiki/Layer_2_Tunneling_Protocol
+- https://www.cloudshark.org/captures/42d07a525b55
+
+### PPTP (TCP 1723)
+
+   - Point-to-Point Tunneling Protocol (PPTP) stands as a foundational networking protocol that empowers the secure deployment of Virtual Private Networks (VPNs) over the Internet. Conceived by Microsoft and collaborative contributors, PPTP is intricately designed to forge a private and encrypted communication conduit between clients and servers, guaranteeing the secure transmission of data.
+
+   - Authentication Mechanisms: PPTP boasts support for a range of robust authentication mechanisms, including Password Authentication Protocol (PAP), Challenge Handshake Authentication Protocol (CHAP), and Microsoft CHAP (MS-CHAP). These mechanisms play a pivotal role in fortifying the verification processes, ensuring the genuine identity of the connecting parties.
+
+   - Encapsulation and Encryption Expertise: PPTP demonstrates its prowess by encapsulating data within its proprietary packets, establishing a secure tunnel for data transmission. Furthermore, it incorporates encryption protocols such as Microsoft Point-to-Point Encryption (MPPE) to safeguard the confidentiality of the transmitted data. This dual-layered approach enhances the privacy and integrity of the communication channel.
+
+   - Awareness of Limitations: Recognizing its historical prevalence, it’s crucial to acknowledge the limitations associated with PPTP. While it was widely adopted in the past, PPTP has exhibited security vulnerabilities, prompting a gradual decline in usage. Organizations and users have increasingly favored more secure VPN protocols like L2TP/IPsec and OpenVPN to address evolving security standards and ensure a higher level of data protection.
+
+[PPTP](../../0-src/pptp.png)
+
+   - Specified in [RFC 2637](https://tools.ietf.org/html/rfc2637) Developed by Microsoft. Obsolete method to create VPN tunnels. Has many well know vulnerabilities.
+
+   - [PPTP Wiki Reference](https://en.wikipedia.org/wiki/Point-to-Point_Tunneling_Protocol)
+
+   - [PPTP Example PCAP from Cloudshark](https://www.cloudshark.org/captures/7a6644ad437e)
+
+
+References:
+
+- https://en.wikipedia.org/wiki/Virtual_private_network
+- https://tools.ietf.org/html/rfc2637
+- https://en.wikipedia.org/wiki/Point-to-Point_Tunneling_Protocol
+- https://www.cloudshark.org/captures/7a6644ad437e
+
+### IP Security (IPSec)
+
+IPsec (Internet Protocol Security) is a suite of protocols used to secure IP communications by providing encryption, authentication, and integrity protection at the network layer (Layer 3) of the OSI model. It is widely used to establish Virtual Private Networks (VPNs) and secure data transmission over IP networks, including the internet.
+
+Transport mode and Tunnel mode are two operational modes of IPsec (Internet Protocol Security) used to provide security for IP communications.
+
+![ipsectrans](../../0-src/ipsectrans.png)
+
+   - Transport Mode:
+
+       - In Transport mode, IPsec only encrypts the payload (data) of the original IP packet, leaving the original IP header intact.
+
+       - Transport mode is typically used for end-to-end communication between two hosts or devices.
+
+       - When using Transport mode, only the data portion of the IP packet is protected by IPsec, while the original IP header, including the source and destination IP addresses, remains visible to intermediate devices.
+
+       - Transport mode is often used for scenarios where the communicating endpoints need to establish a secure connection while maintaining direct communication with each other.
+
+       - Example use cases for Transport mode include securing communication between individual hosts or devices within a private network or securing VoIP (Voice over IP) traffic between two endpoints.
+
+![ipsectunnel](../../0-src/ipsectunnel.png)
+
+   - Tunnel Mode:
+
+       - In Tunnel mode, IPsec encapsulates the entire original IP packet within a new IP packet, adding an additional IP header. Tunnel mode is commonly used to create secure VPN (Virtual Private Network) connections between networks or network devices, such as routers or firewalls.
+
+       - When using Tunnel mode, the original IP packet, including its header and payload, is encrypted and encapsulated within a new IP packet.
+
+       - The new IP header contains the IP addresses of the VPN gateway devices (tunnel endpoints), which are responsible for encrypting and decrypting the data as it passes through the VPN tunnel.
+
+       - Tunnel mode provides network-level security, ensuring that all traffic between the VPN gateway devices is encrypted and protected from eavesdropping or tampering.
+
+       - Example use cases for Tunnel mode include connecting branch offices to a central headquarters network over the internet, creating secure connections between remote users and a corporate network, or establishing site-to-site VPN connections between data centers.
+
+   - Headers used by IPSec:
+
+       - ESP Header (Encapsulating Security Payload):
+
+           - Uses IP protocol number 50 to indicate IPSec with ESP Header payload.
+
+           - The Encapsulating Security Payload provides confidentiality, integrity, and optional authentication for IP packets.
+
+           - It encrypts the payload of IP packets to protect the confidentiality of the data being transmitted.
+
+           - The ESP header includes fields for the Security Parameters Index (SPI), sequence number, padding, authentication data (MAC), and other parameters.
+
+           - ESP can operate in either Transport mode (encrypts only the IP payload) or Tunnel mode (encrypts the entire IP packet).
+
+           - Performs integrity check only on ESP header and payload. Not the outer IP header.
+
+           - Does support protocols like NAT that alter the outer header.
+
+           - Modification or changes to the outer header does not affect ESP.
+
+       - AH Header (Authentication Header):
+
+           - Uses IP protocol number 51 to indicate IPSec with AH Header payload.
+
+           - The Authentication Header provides data integrity, authentication, and anti-replay protection for IP packets.
+
+           - It is used to ensure that the data received has not been altered or tampered with during transmission.
+
+           - The AH header includes fields for the Security Parameters Index (SPI), sequence number, authentication data (Message Authentication Code, MAC), and other parameters.
+
+           - AH can operate in either Transport mode (protects only the IP payload) or Tunnel mode (protects the entire IP packet).
+
+           - Performs integrity check on entire packet to include outer IP header.
+
+           - Integrity done only on immutable fields: Version, Length, Next Header/protocol, Source address, Destination address
+
+           - Mutable fields: DSCP/Traffic Class, Flow Label, TTL/Hop Limit
+
+           - Does not support protocols like NAT that alter the outer header.
+
+           - "mostly" obsolete
+
+       - IKE Header (Internet Key Exchange):
+
+           - IKE typically uses UDP port 500 for its main communication channel.
+
+           - IKEv2 may use UDP port 4500 for NAT traversal (UDP encapsulation) to overcome NAT (Network Address Translation) issues.
+
+           - IKE is used to establish Security Associations (SAs) and negotiate cryptographic parameters for IPsec.
+
+           - It operates at the application layer (Layer 7) and is used to exchange keying material, negotiate encryption and authentication algorithms, and authenticate IPsec peers.
+
+           - The IKE header includes fields for message type, exchange type, cryptographic algorithms, key exchange data, and other parameters.
+
+           - IKE is typically used in conjunction with IPsec to establish secure VPN connections.
+
+### OpenVPN
+
+OpenVPN is an open-source VPN (Virtual Private Network) software that provides secure communication over the internet by creating encrypted tunnels between devices or networks. It is widely used for remote access VPNs, site-to-site VPNs, and other secure networking applications.
+
+OpenVPN requires special software that implements the OpenVPN protocol. There are client and server versions. The client software runs on your device (computer, phone, etc.) and the server software runs on the VPN provider’s server. This software creates the encrypted tunnel and manages the data transmission.
+
+It’s known for being very secure due to strong encryption algorithms and multiple authentication methods. OpenVPN uses the OpenSSL library to provide encryption of both the data and control channels.
+
+It offers a high degree of customization, making it suitable for a wide range of uses. Because of the customization options, setting up OpenVPN can be more complex for non-technical users compared to some other VPN solutions.
+
+   - OpenVPN can be configured to use UDP or TCP as it’s transport layer protocols:
+
+       - UDP Protocol (Default):
+
+           - OpenVPN often uses UDP for communication, providing a lightweight and connectionless transport protocol suitable for VPNs.
+
+           - The default UDP port number for OpenVPN is 1194.
+
+       - TCP Protocol:
+
+           - OpenVPN can also be configured to use TCP for communication, which can be useful in scenarios where UDP traffic is restricted or blocked.
+
+           - The default TCP port number for OpenVPN is 1194, but it can be configured to use other port numbers such as port 443.
+
+
