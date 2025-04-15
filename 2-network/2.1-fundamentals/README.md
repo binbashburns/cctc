@@ -549,4 +549,645 @@ It offers a high degree of customization, making it suitable for a wide range of
 
            - The default TCP port number for OpenVPN is 1194, but it can be configured to use other port numbers such as port 443.
 
+# Sockets
+
+## Describe Socket Types
+
+   - Understanding socket types for network functions
+
+       - User Space Sockets:
+
+           - Stream socket - Normally used with TCP, SCTP, and Bluetooth. A stream socket provides a connection-oriented and sequenced flow of data which has methods for establishment and teardown of connections as well as error detection.
+
+           - Datagram socket - Normally used with UDP. A datagram socket is connection-less by nature. Sockets built this way can send and receive data, but there is no mechanism to retransmit data if a packet is dropped.
+
+           - Examples:
+
+               - Using a User application such as a Web Browser, FTP, Telnet, SSH, netcat, etc to connect to any listening port.
+                ```
+                nc 10.0.0.1 22
+                firefox http://10.0.0.1
+                wget -r http://10.0.0.1
+                curl ftp://10.0.0.1
+                ftp 10.0.0.1
+                telnet 10.0.0.1
+                ssh user@10.0.0.1
+                ```
+               - Using tcpdump or wireshark to read a file
+                ```
+                tcpdump -r capture.pcap
+                ```
+               - Using nmap with no switches (-sS) or -sT
+                ```
+                nmap 10.0.0.1
+                nmap -sT 10.0.0.1
+                ```
+               - Opening listening ports above the Well-Known range (1024+)
+                ```
+                python -m SimpleHTTPServer 7800
+                nc -lvp 1234
+                ```
+               - Using /dev/tcp or /dev/udp to transmit data
+                ```
+                cat /etc/passwd > /dev/tcp/10.0.0.1/1234
+                ```
+       - Kernel Space Sockets:
+
+           - Raw socket - A raw socket allows for the direct sending and receiving of IP packets without automatic protocol-specific transport layer formatting, meaning that all headers are typically included in the packet and not removed when moving up the network stack.
+
+               - Raw sockets tend to be specially crafted packets that do not follow normal communication methods.
+
+               - Any traffic that does not have a transport layer header (TCP/UDP) can be a RAW Socket.
+
+                   - icmp - ping
+
+                   - OSPF
+
+                   - EIGRP
+
+               - Packets that have to be crafted with various flag combinations and other header field manipulation must be created as RAW Sockets. Tools like HPING and Nmap needs to open raw sockets when attempting to set specific flags for performing certain scans.
+                ```
+                nmap -sX 10.0.0.1
+                nmap -sN 10.0.0.1
+                nmap -sF 10.0.0.1
+                ```
+               - Tcpdump requires raw sockets in order to receive each packet, in its entirety, for total packet analysis. The operating system normally strips all the headers when receiving data so to examine these packets with their headers intact they have to be captured as RAW Sockets.
+                ```
+                tcpdump -w capture.pcap
+                ```
+               - Using Scapy to craft or modify a packet for transmission
+
+               - Using Python to craft or modify Raw Sockets for transmission
+
+           - Opening well ports in the Well-Known range (0-1023) require kernel access.
+            ```
+            python -m SimpleHTTPServer 80
+            nc -lvp 123
+            ```
+
+## TCPDUMP Primitive Qualifiers
+
+TCPDUMP breaks down its filters into three (3) different capture qualifiers:
+
+   - type - specifies the 'kind of thing' that the id name or number refers to.
+
+       - Possible types are:
+
+           - host
+
+           - net
+
+           - port
+
+           - portrange
+
+       - Examples: `host 192.168.1.1', `net 192.168.1.0/24', `port 22', `portrange 1-1023'. If there is no type qualifier, host is assumed.
+
+   - dir - specifies a particular transfer direction to and/or from id.
+
+       - Possible directions are:
+
+           - src
+
+           - dst
+
+           - src or dst
+
+           - src and dst
+
+           - ra
+
+           - ta
+
+           - addr1, addr2, addr3, and addr4.
+
+       - Examples: `src 192.168.1.1', `dst net 192.168.1.0/24', `src or dst port ftp-data'. If there is no dir qualifier, `src or dst' is assumed. The ra, ta, addr1, addr2, addr3, and addr4 qualifiers are only valid for IEEE 802.11 Wireless LAN link layers.
+
+   - proto - restricts the match to a particular protocol(s).
+
+       - Possible protos are: ether, fddi, tr, wlan, ip, ip6, icmp, icmp6, arp, rarp, decnet, tcp and udp.
+
+       - Examples:
+
+           - `ether src 192.168.1.1`
+
+           - `arp net 192.168.1.0/24`
+
+           - `tcp port 22`
+
+           - `udp portrange 1-1023`
+
+           - `wlan addr2 0:2:3:4:5:6`
+
+       - If there is no proto qualifier, all protocols consistent with the type are assumed.
+
+       - Examples: `src 192.168.1.1` means `(ip or arp or rarp) src 192.168.1.1`, `net 192.168.1.0/24` means `(ip or arp or rarp) net 192.168.1.0/24` and `port 53` means `(tcp or udp) port 53`.
+
+## Basic TCPDump options
+
+   - `-A` Prints the frame payload in ASCII.
+```
+tcpdump -A
+```
+   - `-D` Print the list of the network interfaces available on the system and on which TCPDump can capture packets. For each network interface, a number and an interface name, followed by a text description of the interface, is printed. This can be used to identify which interfaces are available for traffic capture.
+```
+tcpdump -D
+```
+   - `-i` Normally, eth0 will be selected by default if you do not specify an interface. However, if a different interface is needed, it must be specified.
+```
+tcpdump -i eth0
+```
+   - `-e` Prints Data-Link Headers. Default is to print the encapsulated protocol only.
+```
+tcpdump -e
+```
+   - `-X` displays packet data in HEX and ASCII.
+   - `-XX` displays the packet data in HEX and ASCII to include the Ethernet portion.
+```
+tcpdump -i eth0 -X
+tcpdump -i eth0 -XX
+```
+   - `-w` writes the capture to an output file
+```
+tcpdump -w something.pcap
+```
+   - `-r` reads from the pcap
+```
+tcpdump -r something.pcap
+```
+   - `-v` gives more verbose output with details on the time to live, IPID, total length, options, and flags. Additionally, it enables integrity checking.
+```
+tcpdump -vv
+```
+   - `-n` Does not covert protocol and addresses to names
+```
+tcpdump -n
+```
+
+Tcpdump for specific protocol traffic.
+```
+tcpdump port 80 -vn
+```
+
+The logical and relational operators can be combined with primitives to perform specific criteria for traffic filtering.
+
+tcpdump for specific protocol traffic of more than one type.
+```
+tcpdump port 80 or 22 -vn
+```
+tcpdump for a range of ports on 2 different hosts with a destination to a specific network
+```
+tcpdump portrange 20-100 and host 10.1.0.2 or host 10.1.0.3 and dst net 10.2.0.0/24 -vn
+```
+tcpdump filter for source network 10.1.0.0/24 and destination network 10.3.0.0/24 or dst host 10.2.0.3 and not host 10.1.0.3.
+```
+tcpdump "(src net 10.1.0.0/24  && (dst net 10.3.0.0/24 || dst host 10.2.0.3) && (! dst host 10.1.0.3))"" -vn
+```
+
+## TCPDump Primitive Examples
+
+Simple: Simple primitives are basic filters that match specific attributes of network packets. They are straightforward and generally used to focus on a particular aspect of the traffic. Examples include:
+
+   - To print all ethernet traffic:
+
+    `tcpdump ether`
+
+   - To print all packets related to ARP:
+
+    `tcpdump arp`
+
+   - To print all packets related to ICMP:
+
+    `tcpdump icmp`
+
+   - To print all ICMP echo-request packets :
+
+    `tcpdump 'icmp[icmptype] = icmp-echo'`
+
+   - To print all ICMP echo-reply packets :
+
+    `tcpdump 'icmp[icmptype] = icmp-reply'`
+
+   - To print all packets arriving at or departing from 192.168.1.1:
+
+    `tcpdump host 192.168.1.1`
+
+   - To print all packets arriving at 192.168.1.1:
+
+    `tcpdump dst host 192.168.1.1`
+
+   - To print all packets departing from 192.168.1.1:
+
+    `tcpdump src host 192.168.1.1`
+
+   - To print all packets arriving at or departing from 192.168.1.0/24 network:
+
+    `tcpdump net 192.168.1.0/24`
+
+   - To print all packets departing from 192.168.1.0/24 network:
+
+    `tcpdump src net 192.168.1.0/24`
+
+   - To print all packets arriving at 192.168.1.0/24 network:
+
+    `tcpdump dst net 192.168.1.0/24`
+
+   - To print all packets related to IPv4:
+
+    `tcpdump ip`
+
+   - To print all packets related to IPv6:
+
+    `tcpdump ip6`
+
+   - To print all packets related to TCP:
+
+    `tcpdump tcp`
+
+   - To print all packets related to UDP:
+
+    `tcpdump udp`
+
+   - To print all packets arriving at or departing from TCP port 22:
+
+    `tcpdump tcp port 22`
+
+   - To print all packets arriving at TCP port 22:
+
+    `tcpdump tcp dst port 22`
+
+   - To print all packets departing from TCP port 22:
+
+    `tcpdump tcp src port 22`
+
+   - To print all packets arriving at or departing from TCP or UDP port 53:
+
+    `tcpdump port 53`
+
+   - To print all packets with TCP flag ACK set:
+
+    `'tcp[tcpflags] = tcp-ack'`
+
+Complex: Complex primitives combine multiple simple filters using logical operators or refine them to create more specific capture rules. They allow more granular control over the captured data. Examples include:
+
+   - To print traffic between 192.168.1.1 and either 10.1.1.1 or 10.1.1.2:
+
+    `tcpdump host 192.168.1.1 and ( 10.1.1.1 or 10.1.1.2 )`
+
+   - To print all IP packets between 10.1.1.1 and any host except 10.1.1.2:
+
+    `tcpdump ip host 10.1.1.1 and not 10.1.1.2`
+
+   - To print all traffic between local hosts and hosts at Berkeley:
+
+    `tcpdump net ucb-ether`
+
+   - To print all ftp traffic through internet gateway 192.168.1.1: (note that the expression is quoted to prevent the shell from (mis-)interpreting the parentheses):
+
+    `tcpdump 'gateway 192.168.1.1 and (port ftp or ftp-data)'`
+
+   - To print traffic neither sourced from nor destined for local hosts (if you gateway to one other net, this stuff should never make it onto your local net).
+
+    `tcpdump ip and not net localnet`
+
+   - To print the start and end packets (the SYN and FIN packets) of each TCP conversation that involves a non-local host.
+
+    `tcpdump 'tcp[tcpflags] & (tcp-syn|tcp-fin) != 0 and not src and dst net localnet'`
+
+   - To print the TCP packets with flags RST and ACK both set. (i.e. select only the RST and ACK flags in the flags field, and if the result is "RST and ACK both set", match)
+
+    `tcpdump 'tcp[tcpflags] & (tcp-rst|tcp-ack) == (tcp-rst|tcp-ack)'`
+
+   - To print all IPv4 HTTP packets to and from port 80, i.e. print only packets that contain data, not, for example, SYN and FIN packets and ACK-only packets. (IPv6 is left as an exercise for the reader.)
+
+    `tcpdump 'tcp port 80 and (((ip[2:2] - ((ip[0]&0xf)<<2)) - ((tcp[12]&0xf0)>>2)) != 0)'`
+
+   - To print IP packets longer than 576 bytes sent through gateway 192.168.1.1:
+
+    `tcpdump 'gateway 192.168.1.1 and ip[2:2] > 576'`
+
+   - To print IP broadcast or multicast packets that were not sent via Ethernet broadcast or multicast:
+
+    `tcpdump 'ether[0] & 1 = 0 and ip[16] >= 224'`
+
+   - To print all ICMP packets that are not echo requests/replies (i.e., not ping packets):
+
+    `tcpdump 'icmp[icmptype] != icmp-echo and icmp[icmptype] != icmp-echoreply'`
+
+## Berkley Packet Filters
+
+TCPDump filtering with BPF’s and bit-masking:
+BPF’s in conjunction with TCPDump, operators, and bitmasking make for an extremely powerful traffic filtering and parsing tool.
+
+   - The smallest filter that BPF can understand easily is a byte.
+
+   - A span of bytes can be denoted as in the BPF Bytecode example `"ether[12:2]"`, starts at byte offset 12 and span 2 bytes in to look at the ethertype field.
+
+   - Using BPFs with operators, bitmasking, and TCPDump creates a powerful tool for traffic filtering and parsing.
+
+SYNTAX
+```
+tcpdump {A} [B:C] {D} {E} {F} {G}
+
+A = Protocol ( ether | arp | ip | ip6 | icmp | tcp | udp )
+B = Header Byte number
+C = optional: Byte Length. Can be 1, 2 or 4 (default 1)
+D = optional: Bitwise mask (&)
+E = Relational operator ( = | == | > | < | <= | >= | != | () | << | >> )
+F = Result of Expression
+G = optional: Logical Operator (&& ||) to bridge expressions
+```
+
+Example:
+`tcpdump 'ether[12:2] = 0x0800 && (tcp[2:2] != 22 && tcp[2:2] != 23)'`
+
+This expression with look for any IPv4 traffic that is not SSH or Telnet.
+
+   - First it will look at ether[12:2] which is typically the ethertype field. The expression tells the system to check if this field contains 0x0800.
+
+   - Conjoins the first expression with the &&.
+
+   - Using the () and || operators we can build two or more expressions to look for. In this case it checks the TCP destination field (tcp[2:2]) does not contain 22 or 23.
+
+## BPFs at the Data-Link layer
+
+   - Using BPFs to print source and destination MAC addresses. Since the maximum amount of bytes that can be read with BPF is 4 and the size of a MAC address is 6 bytes, we may have to prepare the filter in 2 or more parts conjoined.
+
+       - Here are 2 ways we can search for the destination broadcast MAC address.
+        ```
+        tcpdump -i eth0 'ether[0:4] = 0xffffffff and ether[4:2] = 0xffff'
+        tcpdump -i eth0 'ether[0:2] = 0xffff and ether[2:2]= 0xffff and ether[4:2] = 0xffff'
+        ```
+       - Here are 2 ways we can search for the source MAC address of fa:16:3e:f0:ca:fc.
+        ```
+        tcpdump -i eth0 'ether[6:4] = 0xfa163ef0 and ether[10:2] = 0xcafc'
+        tcpdump -i eth0 'ether[6:2] = 0xfa16 and ether[8:2]= 0x3ef0 and ether[10:2] = 0xcafc'
+        ```
+   - Search the first byte of the source (ether[0]) and destination (ether[6]) MAC to determine if it’s a unicast (0x00) or multicast (0x01) MAC address.
+```
+tcpdump -i eth0 'ether[0] & 0x01 = 0x00'
+tcpdump -i eth0 'ether[0] & 0x01 = 0x01'
+tcpdump -i eth0 'ether[6] & 0x01 = 0x00'
+tcpdump -i eth0 'ether[6] & 0x01 = 0x01'
+```
+   - Using BPFs to print packets interface with the EtherType (ether[12:2]) field matching IPv4, ARP, VLAN Tag, and IPv6 respectively.
+```
+tcpdump -i eth0 ether[12:2] = 0x0800
+tcpdump -i eth0 ether[12:2] = 0x0806
+tcpdump -i eth0 ether[12:2] = 0x8100
+tcpdump -i eth0 ether[12:2] = 0x86dd
+```
+   - Print packets that belong to VLAN 100. Here we are masking out the 4-bit PCP/DEI field. It is unsure if this field will or will not have a value so it’s best to ignore these bits unless you are looking for a specific value here.
+```
+tcpdump -i eth0 'ether[12:2] = 0x8100 and ether[14:2] & 0x0fff = 0x0064'
+tcpdump -i eth0 'ether[12:4] & 0xffff0fff = 0x81000064'
+```
+   - Print packets that have a double VLAN Tag.
+```
+tcpdump -i eth0 'ether[12:2] = 0x8100 and ether[16:2] = 0x8100'
+```
+   - Print packets that are potential Double tagging (VLAN Hopping) using VLAN 1 (native) to attack VLAN 999
+```
+tcpdump -i eth0 'ether[12:4] & 0xffff0fff = 0x81000001 && ether[16:4] & 0xffff0fff = 0x810003E7
+```
+   - Print all ARP requests and Reply’s respectively.
+```
+tcpdump -i eth0 arp[6:2] = 0x01
+tcpdump -i eth0 arp[6:2] = 0x02
+```
+
+## BPFs at the Network layer
+
+Print all ipv4 packets with the IHL greater than 5. This will indicate that there are IP options included after the IPv4 header but before the next encapsulated header.
+```
+tcpdump -i eth0 'ip[0] & 0x0f > 0x05'
+tcpdump -i eth0 'ip[0] & 15 > 5'
+```
+Print ipv4 packets with the DSCP value of 16.
+```
+tcpdump -i eth0 'ip[1] & 0xfc = 0x40'
+tcpdump -i eth0 'ip[1] & 252 = 64'
+tcpdump -i eth0 'ip[1] >> 2 = 16'
+```
+Print ipv4 packets with ONLY the RES flag set. DF and MF must be off.
+```
+tcpdump -i eth0 'ip[6] & 0xE0 = 0x80'
+tcpdump -i eth0 'ip[6] & 224 = 128'
+```
+Print ipv4 packets with ONLY the DF flag set. RES and MF must be off.
+```
+tcpdump -i eth0 'ip[6] & 0xE0 = 0x40'
+tcpdump -i eth0 'ip[6] & 224 = 64'
+```
+Print ipv4 packets with ONLY the MF flag set. RES and DF must be off.
+```
+tcpdump -i eth0 'ip[6] & 0xE0 = 0x20'
+tcpdump -i eth0 'ip[6] & 224 = 32'
+```
+Print ipv4 packets with any flag combination.
+```
+tcpdump -i eth0 'ip[6] & 0xE0 > 0'
+tcpdump -i eth0 'ip[6] & 224 != 0'
+```
+Print ipv4 packets with the RES bit set. The other 2 flags are ignored so they can be on or off.
+```
+tcpdump -i eth0 'ip[6] & 0x80 = 0x80'
+tcpdump -i eth0 'ip[6] & 128 = 128'
+```
+Print ipv4 packets with the DF bit set. The other 2 flags are ignored so they can be on or off.
+```
+tcpdump -i eth0 'ip[6] & 0x40 = 0x40'
+tcpdump -i eth0 'ip[6] & 64 = 64'
+```
+Print ipv4 packets with the MF bit set. The other 2 flags are ignored so they can be on or off.
+```
+tcpdump -i eth0 'ip[6] & 0x20 = 0x20'
+tcpdump -i eth0 'ip[6] & 32 = 32'
+```
+Print ipv4 packets with the offset field having any value greater than zero (0).
+```
+tcpdump -i eth0 'ip[6:2] & 0x1fff > 0'
+tcpdump -i eth0 'ip[6:2] & 8191 > 0'
+```
+Print ipv4 packets with the TTL being equal to and less than 128.
+```
+tcpdump -i eth0 'ip[8] = 128'
+tcpdump -i eth0 'ip[8] < 128'
+```
+Print any ICMPv4, TCP, or UDP encapsulated within an ipv4 packet.
+```
+tcpdump -i eth0 'ip[9] = 0x01'
+tcpdump -i eth0 'ip[9] = 0x06'
+tcpdump -i eth0 'ip[9] = 0x11'
+```
+Print ipv4 packets with the source and destination address of 10.1.1.1.
+```
+tcpdump -i eth0 'ip[12:4] = 0x0a010101'
+tcpdump -i eth0 'ip[16:4] = 0x0a010101'
+```
+Print ipv6 packets with the Traffic Class of any value.
+```
+tcpdump -i eth0 'ip6[0:2] & 0x0ff0 != 0'
+```
+Print ipv6 packets with the Flow Label field of any value.
+```
+tcpdump -i eth0 'ip6[0:4] & 0x000FFFFF != 0'
+```
+Print any ICMPv6, TCP, or UDP encapsulated within an ipv6 packet.
+```
+tcpdump -i eth0 'ip6[6] = 0x3a'
+tcpdump -i eth0 'ip6[6] = 0x06'
+tcpdump -i eth0 'ip6[6] = 0x11'
+```
+Print ipv6 packets with the TTL being equal to and less than 128.
+```
+tcpdump -i eth0 'ip6[7] = 128'
+tcpdump -i eth0 'ip6[7] < 128'
+```
+Print ICMPv4 packets set to Destination Unreachable (Type 3) and Network Administratively Prohibited (Code 9). Note: ICMPv6 is not supported by BPFs.
+```
+tcpdump -i eth0 'icmp[0] = 3 and icmp[1] = 9'
+```
+
+6.2.6.1.1 Wireshark Display Filters
+
+Wireshark display filters are a powerful feature that allows users to selectively view network traffic based on specific criteria. These filters enable users to focus on particular packets of interest while disregarding others, making it easier to analyze network communication and identify relevant information.
+
+Here is a list of common and popular Wireshark Display filters.
+
+    Filtering for a particular protocol will give all packets that have the protocol header in the packet payload.
+
+        This will NOT show the TCP setup, TCP teardown, or fragmented packets that are part of the communication but do not have the protocol header in payload.
+
+        We can filter for specific protocols such as:
+
+            Layer 2: eth, arp, vlan, wlan
+
+            Layer 3: ip, ipv6, icmp, icmpv6
+
+            Layer 4: tcp, udp
+
+            Layer 5: smb, socks, rpc
+
+            Layer 7: telnet, ssh, http, ssl, tls, quic, dns, ftp, ftp-data, tftp, smtp, pop, imap, dhcp or bootp, ntp, tacplus, radius, rdp
+
+            Routing protocols: rip, ospf, bgp
+
+    We can filter for specific addresses:
+
+        Layer 2: eth.addr, eth.dst ==, eth.src ==
+
+        Layer 3: ip.addr ==, ip.dst ==, ip.src ==
+
+        Layer 4: tcp.port ==, tcp.dstport ==, tcp.srcport ==, udp.port ==, udp.dstport ==, udp.srcport ==
+
+    IPv4 Filters:
+
+        IHL: ip.hdr_len == 20, ip.hdr_len > 20
+
+        DSCP: ip.dsfield.dscp > 0, ip.dsfield.dscp == 48
+
+        ECN: ip.dsfield.ecn > 0. ip.dsfield.ecn == 2
+
+        Flags: ip.flags.rb == 1, ip.flags.df == 1
+
+        Fragmentation: (ip.flags.mf == 1) || (ip.frag_offset > 0)
+
+        TTL: ip.ttl == 64, ip.ttl == 128, ip.ttl ⇐ 64 && ip.ttl > 30 && !(ip.ttl > 64)
+
+        Protocol: ip.proto == 1, ip.proto == 6, ip.proto == 17
+
+        6-in-4 or 6-to-4 encapsulation: ip.proto == 41
+
+    IPv6 Filters:
+
+        Traffic Class: ipv6.tclass > 0, ipv6.tclass == 0xe0
+
+        Next Header: ipv6.nxt == 6, ipv6.nxt == 17, ipv6.nxt == 58
+
+        4-in-6 encapsulation: ipv6.nxt == 4
+
+    TCP Specific Filters:
+
+        TCP Offset: tcp.hdr_len == 32, tcp.hdr_len > 20
+
+        TCP Flags:
+
+            Individual Flags: tcp.flags.syn == 1, tcp.flags.ack == 0, tcp.flags.urg == 1. tcp.flags.reset == 1
+
+            Flag Combinations: tcp.flags == 0x002, tcp.flags == 0x012, tcp.flags == 0x010, tcp.flags == 0x018
+
+        Urgent Pointer: tcp.urgent_pointer > 0
+
+    HTTP specific filters:
+
+        http.request
+
+        http.request.method == <method>
+
+            <method> = GET, POST, HEAD, etc.
+
+        http.response
+
+        http.response.code == <code>
+
+            100, 200, 300, 400, etc.
+
+        http.user_agent, http.user_agent == "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.2) Gecko/20070219 Firefox/2.0.0.2", !(http.user_agent == "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.2) Gecko/20070219 Firefox/2.0.0.2")
+
+    DNS filters:
+
+        Query: A = dns.qry.type == 1, NS = dns.qry.type == 2, SOA = dns.qry.type == 6, AAAA = dns.qry.type == 28, AXFR = dns.qry.type == 252
+
+        Response: A = dns.resp.type == 1, NS = dns.resp.type == 2, SOA = dns.resp.type == 6, AAAA = dns.resp.type == 28, AXFR = dns.resp.type == 252
+
+    SSH Filters:
+
+        ssh.protocol, ssh.protocol == "SSH-2.0-OpenSSH_7.2p2 Ubuntu-4ubuntu2.1"
+
+    ARP Filters:
+
+        ARP Request/Reply: arp.opcode == 1, arp.opcode == 2
+
+        RARP Request/Reply: arp.opcode == 3, arp.opcode == 4
+
+        Gratutious ARP: (arp.opcode == 2) && (eth.addr == ff:ff:ff:ff:ff:ff)
+
+    ICMP Filters:
+
+        Echo Request: icmp.type == 0
+
+        Echo Reply: icmp.type == 8
+
+        Time Exceeded: icmp.type == 11
+
+        Destination Unreachable and Port Unreachable: (icmp.type == 3) && (icmp.code == 3)
+
+    DHCP Filters:
+
+        Client to Server: (udp.srcport == 68) && (udp.dstport == 67)
+
+        Server to Client: (udp.srcport == 67) && (udp.dstport == 68)
+
+        Discover: dhcp.option.dhcp == 1
+
+        Offer: dhcp.option.dhcp == 2
+
+        Request: dhcp.option.dhcp == 3
+
+        Ack: dhcp.option.dhcp == 5
+
+    FTP Filters:
+
+        Commands: ftp.request.command
+
+        Sending username or password: ftp.request.command == "USER", ftp.request.command == "PASS"
+
+        Download file: `ftp.request.command == "RETR"
+
+        Upload file: ftp.request.command == "STOR"
+
+        Switch to passive mode: ftp.request.command == "PASV"
+
+        Directory listing: ftp.request.command == "LIST"
 
