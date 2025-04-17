@@ -904,3 +904,5 @@ nmap -PR -6 fe80::f816:3eff:fed9:5116/64(takes a long time to run)
        - Pull files using scp:
            - `proxychains scp student@10.0.0.1:/usr/share/cctc/flag.png .`
 
+## Notes
+ssh net7_student4@<host>
